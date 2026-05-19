@@ -12,7 +12,8 @@ const useOrderStore = create((set, get) => ({
   createOrder: async (orderData, token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch("http://localhost:5000/api/v1/orders", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+      const response = await fetch(`${API_URL}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,7 +37,8 @@ const useOrderStore = create((set, get) => ({
   fetchOrders: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch("http://localhost:5000/api/v1/orders", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+      const response = await fetch(`${API_URL}/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -53,8 +55,9 @@ const useOrderStore = create((set, get) => ({
 
   updateOrderStatus: async (orderId, status, token) => {
     try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
       const response = await fetch(
-        `http://localhost:5000/api/v1/orders/${orderId}/status`,
+        `${API_URL}/orders/${orderId}/status`,
         {
           method: "PATCH",
           headers: {

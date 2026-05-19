@@ -4,6 +4,23 @@ const { Sequelize } = require("sequelize");
 const authenticate = require("../middleware/auth");
 const { checkRole } = require("../middleware/rbac");
 
+// GET /api/v1/reports - List all reports
+router.get(
+  "/",
+  authenticate,
+  checkRole("superadmin", "manager", "cashier"),
+  async (req, res) => {
+    try {
+      const summaries = await DailySummary.findAll({
+        order: [["date", "DESC"]],
+      });
+      res.json(summaries);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
 // GET /api/v1/reports/daily - Get daily summary
 router.get(
   "/daily",
@@ -14,7 +31,7 @@ router.get(
       const today = new Date().toISOString().split("T")[0];
 
       const bills = await Bill.findAll({
-        where: { status: "finalized", deleted_at: null },
+        where: { status: "paid", deleted_at: null },
         include: [{ model: Payment }],
       });
 
@@ -25,23 +42,22 @@ router.get(
         0,
       );
       const totalCash = payments
-        .filter((p) => p.payment_method === "cash")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "cash")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const totalTelebirr = payments
-        .filter((p) => p.payment_method === "telebirr")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "telebirr")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const totalCBE = payments
-        .filter((p) => p.payment_method === "cbe_birr")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "cbe_birr")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
       const summary = {
-        summary_date: today,
-        total_sales: totalSales,
-        total_cash: totalCash,
-        total_telebirr: totalTelebirr,
-        total_cbe: totalCBE,
+        date: today,
+        total_revenue: totalSales,
+        cash_total: totalCash,
+        telebirr_total: totalTelebirr,
+        cbe_total: totalCBE,
         total_orders: bills.length,
-        is_closed: false,
       };
 
       res.json(summary);
@@ -60,7 +76,7 @@ router.get(
     try {
       const { from_date, to_date } = req.query;
 
-      const where = { status: "finalized", deleted_at: null };
+      const where = { status: "paid", deleted_at: null };
       if (from_date || to_date) {
         where.createdAt = {};
         if (from_date) where.createdAt[Sequelize.Op.gte] = new Date(from_date);
@@ -95,7 +111,7 @@ router.post(
       const today = new Date().toISOString().split("T")[0];
 
       const bills = await Bill.findAll({
-        where: { status: "finalized", deleted_at: null },
+        where: { status: "paid", deleted_at: null },
         include: [{ model: Payment }],
       });
 
@@ -106,23 +122,24 @@ router.post(
         0,
       );
       const totalCash = payments
-        .filter((p) => p.payment_method === "cash")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "cash")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const totalTelebirr = payments
-        .filter((p) => p.payment_method === "telebirr")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "telebirr")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const totalCBE = payments
-        .filter((p) => p.payment_method === "cbe_birr")
-        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        .filter((p) => p.method === "cbe_birr")
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
       const summary = await DailySummary.create({
-        summary_date: today,
-        total_sales: totalSales,
-        total_cash: totalCash,
-        total_telebirr: totalTelebirr,
-        total_cbe: totalCBE,
+        date: today,
+        total_revenue: totalSales,
+        cash_total: totalCash,
+        telebirr_total: totalTelebirr,
+        cbe_total: totalCBE,
         total_orders: bills.length,
-        is_closed: true,
+        closed_by: req.user.userId,
+        closed_at: new Date(),
       });
 
       await AuditLog.create({

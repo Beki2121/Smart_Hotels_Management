@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { Booking, Room, GuestCharge, AuditLog } = require("../db");
+const { Booking, Room, RoomType, GuestCharge, AuditLog } = require("../db");
 const authenticate = require("../middleware/auth");
 const { checkRole } = require("../middleware/rbac");
 
@@ -28,33 +28,33 @@ router.post(
         room_id,
         guest_name,
         guest_phone,
-        check_in_date,
-        check_out_date,
+        check_in,
+        check_out,
         number_of_guests,
       } = req.body;
 
-      if (!room_id || !guest_name || !check_in_date || !check_out_date) {
+      if (!room_id || !guest_name || !check_in || !check_out) {
         return res.status(400).json({
-          error:
-            "room_id, guest_name, check_in_date, and check_out_date required",
+          error: "room_id, guest_name, check_in, and check_out required",
         });
       }
 
-      const room = await Room.findByPk(room_id);
+      const room = await Room.findByPk(room_id, {
+        include: [{ model: RoomType }],
+      });
       if (!room) return res.status(404).json({ error: "Room not found" });
 
-      const booking_number = `BOOK-${Date.now()}`;
       const booking = await Booking.create({
-        booking_number,
         room_id,
         guest_name,
         guest_phone,
-        check_in_date: new Date(check_in_date),
-        check_out_date: new Date(check_out_date),
+        check_in: new Date(check_in),
+        check_out: new Date(check_out),
         number_of_guests,
         status: "confirmed",
-        base_room_charge: room.RoomType?.base_price || 0,
-        total_charges: room.RoomType?.base_price || 0,
+        base_room_charge: room.RoomType?.base_rate || 0,
+        total_charges: room.RoomType?.base_rate || 0,
+        user_id: req.user.userId,
       });
 
       room.status = "reserved";

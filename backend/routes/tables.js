@@ -7,7 +7,7 @@ const { checkRole } = require("../middleware/rbac");
 router.get("/", async (req, res) => {
   try {
     const tables = await Table.findAll({
-      order: [["table_number", "ASC"]],
+      order: [["label", "ASC"]],
     });
     res.json(tables);
   } catch (err) {
@@ -22,13 +22,13 @@ router.post(
   checkRole("superadmin", "manager"),
   async (req, res) => {
     try {
-      const { table_number, capacity, section } = req.body;
-      if (!table_number || !capacity)
+      const { label, capacity, section } = req.body;
+      if (!label || !capacity)
         return res
           .status(400)
-          .json({ error: "table_number and capacity required" });
+          .json({ error: "label and capacity required" });
 
-      const table = await Table.create({ table_number, capacity, section });
+      const table = await Table.create({ label, capacity, section });
 
       await AuditLog.create({
         user_id: req.user.userId,

@@ -117,22 +117,21 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      name: {
+      name_en: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
       },
-      description: {
-        type: DataTypes.TEXT,
+      name_am: {
+        type: DataTypes.STRING(100),
         allowNull: true,
       },
-      is_active: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
+      module_type: {
+        type: DataTypes.ENUM("restaurant", "bar", "butcher", "grocery"),
+        allowNull: false,
       },
-      deleted_at: {
-        type: DataTypes.DATE,
-        allowNull: true,
+      sort_order: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
       },
     },
     {
@@ -158,33 +157,41 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: "categories", key: "id" },
       },
-      name: {
-        type: DataTypes.STRING(100),
+      name_en: {
+        type: DataTypes.STRING(150),
         allowNull: false,
       },
-      description: {
-        type: DataTypes.TEXT,
+      name_am: {
+        type: DataTypes.STRING(150),
         allowNull: true,
       },
-      base_price: {
+      price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
-      discount_percent: {
-        type: DataTypes.DECIMAL(5, 2),
-        defaultValue: 0,
+      happy_hour_price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
       },
-      is_vegetarian: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
+      happy_hour_start: {
+        type: DataTypes.TIME,
+        allowNull: true,
       },
-      preparation_time_minutes: {
-        type: DataTypes.INTEGER,
-        defaultValue: 15,
+      happy_hour_end: {
+        type: DataTypes.TIME,
+        allowNull: true,
       },
-      is_active: {
+      unit: {
+        type: DataTypes.ENUM('piece', 'kg', 'g', 'pack', 'bottle', 'litre'),
+        defaultValue: 'piece',
+      },
+      is_available: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
+      },
+      module: {
+        type: DataTypes.ENUM('restaurant', 'bar', 'butcher', 'grocery'),
+        allowNull: false,
       },
       deleted_at: {
         type: DataTypes.DATE,
@@ -214,11 +221,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: "menu_items", key: "id" },
       },
-      name: {
+      name_en: {
         type: DataTypes.STRING(100),
         allowNull: false,
       },
-      price_adjustment: {
+      name_am: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      price_delta: {
         type: DataTypes.DECIMAL(10, 2),
         defaultValue: 0,
       },
@@ -241,27 +252,21 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      table_number: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-        unique: true,
-      },
-      capacity: {
-        type: DataTypes.INTEGER,
+      label: {
+        type: DataTypes.STRING(50),
         allowNull: false,
       },
       section: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.STRING(100),
         allowNull: true,
       },
+      capacity: {
+        type: DataTypes.INTEGER,
+        defaultValue: 4,
+      },
       status: {
-        type: DataTypes.ENUM(
-          "available",
-          "occupied",
-          "reserved",
-          "maintenance",
-        ),
-        defaultValue: "available",
+        type: DataTypes.ENUM('available', 'occupied', 'reserved'),
+        defaultValue: 'available',
       },
     },
     {
@@ -282,38 +287,25 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      order_number: {
-        type: DataTypes.STRING(20),
-        allowNull: false,
-        unique: true,
-      },
       table_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: { model: "tables", key: "id" },
       },
-      created_by_user_id: {
+      user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: { model: "users", key: "id" },
       },
       status: {
-        type: DataTypes.ENUM(
-          "pending",
-          "confirmed",
-          "in_kitchen",
-          "ready",
-          "served",
-          "completed",
-          "cancelled",
-        ),
-        defaultValue: "pending",
+        type: DataTypes.ENUM('pending', 'preparing', 'ready', 'served', 'billed', 'cancelled'),
+        defaultValue: 'pending',
       },
-      total_amount: {
-        type: DataTypes.DECIMAL(10, 2),
-        defaultValue: 0,
+      type: {
+        type: DataTypes.ENUM('restaurant', 'bar', 'butcher', 'grocery', 'room'),
+        allowNull: false,
       },
-      special_requests: {
+      notes: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
@@ -351,25 +343,29 @@ module.exports = (sequelize) => {
         references: { model: "menu_items", key: "id" },
       },
       quantity: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 3),
         allowNull: false,
         defaultValue: 1,
+      },
+      weight_kg: {
+        type: DataTypes.DECIMAL(8, 3),
+        allowNull: true,
       },
       unit_price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
-      modifiers_applied: {
+      modifier_ids: {
         type: DataTypes.JSON,
         allowNull: true,
       },
-      special_instructions: {
+      status: {
+        type: DataTypes.ENUM('pending', 'preparing', 'ready'),
+        defaultValue: 'pending',
+      },
+      notes: {
         type: DataTypes.TEXT,
         allowNull: true,
-      },
-      status: {
-        type: DataTypes.ENUM("pending", "in_kitchen", "ready", "served"),
-        defaultValue: "pending",
       },
     },
     {
@@ -390,30 +386,25 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      bill_number: {
-        type: DataTypes.STRING(20),
-        allowNull: false,
-        unique: true,
-      },
       order_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: { model: "orders", key: "id" },
       },
-      generated_by_user_id: {
+      table_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        references: { model: "users", key: "id" },
+        allowNull: true,
+        references: { model: "tables", key: "id" },
       },
       subtotal: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
-      tax_amount: {
+      discount_amount: {
         type: DataTypes.DECIMAL(10, 2),
         defaultValue: 0,
       },
-      discount_amount: {
+      tax_amount: {
         type: DataTypes.DECIMAL(10, 2),
         defaultValue: 0,
       },
@@ -422,8 +413,13 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       status: {
-        type: DataTypes.ENUM("draft", "finalized", "void"),
-        defaultValue: "draft",
+        type: DataTypes.ENUM('open', 'paid', 'voided'),
+        defaultValue: 'open',
+      },
+      created_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: "users", key: "id" },
       },
       deleted_at: {
         type: DataTypes.DATE,
@@ -453,21 +449,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: "bills", key: "id" },
       },
-      payment_method: {
-        type: DataTypes.ENUM("cash", "telebirr", "cbe_birr"),
+      method: {
+        type: DataTypes.ENUM('cash', 'telebirr', 'cbe_birr'),
         allowNull: false,
       },
-      amount_paid: {
+      amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
-      reference_number: {
+      reference_no: {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
-      status: {
-        type: DataTypes.ENUM("completed", "pending", "failed"),
-        defaultValue: "completed",
+      confirmed_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: "users", key: "id" },
       },
     },
     {
@@ -494,17 +491,17 @@ module.exports = (sequelize) => {
         references: { model: "bills", key: "id" },
       },
       receipt_number: {
-        type: DataTypes.STRING(20),
+        type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
       },
-      receipt_text: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      language: {
+        type: DataTypes.ENUM('en', 'am'),
+        defaultValue: 'en',
       },
-      is_printed: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
+      printed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
@@ -528,19 +525,18 @@ module.exports = (sequelize) => {
       name: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
-      },
-      base_price: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-      },
-      capacity: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
       },
       description: {
         type: DataTypes.TEXT,
         allowNull: true,
+      },
+      base_rate: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      max_occupancy: {
+        type: DataTypes.INTEGER,
+        defaultValue: 2,
       },
     },
     {
@@ -562,7 +558,7 @@ module.exports = (sequelize) => {
         autoIncrement: true,
       },
       room_number: {
-        type: DataTypes.STRING(10),
+        type: DataTypes.STRING(20),
         allowNull: false,
         unique: true,
       },
@@ -573,16 +569,19 @@ module.exports = (sequelize) => {
       },
       floor: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        defaultValue: 1,
       },
       status: {
-        type: DataTypes.ENUM(
-          "available",
-          "occupied",
-          "maintenance",
-          "cleaning",
-        ),
-        defaultValue: "available",
+        type: DataTypes.ENUM('available', 'occupied', 'maintenance'),
+        defaultValue: 'available',
+      },
+      amenities: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      deleted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
@@ -603,52 +602,43 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      booking_number: {
-        type: DataTypes.STRING(20),
-        allowNull: false,
-        unique: true,
-      },
       room_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: { model: "rooms", key: "id" },
       },
       guest_name: {
-        type: DataTypes.STRING(100),
+        type: DataTypes.STRING(150),
         allowNull: false,
       },
       guest_phone: {
         type: DataTypes.STRING(20),
+        allowNull: false,
+      },
+      check_in: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      check_out: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      rate_per_night: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      total_amount: {
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
       },
-      check_in_date: {
-        type: DataTypes.DATE,
-        allowNull: false,
+      status: {
+        type: DataTypes.ENUM('confirmed', 'checked_in', 'checked_out', 'cancelled'),
+        defaultValue: 'confirmed',
       },
-      check_out_date: {
-        type: DataTypes.DATE,
-        allowNull: false,
-      },
-      number_of_guests: {
+      created_by: {
         type: DataTypes.INTEGER,
         allowNull: false,
-      },
-      status: {
-        type: DataTypes.ENUM(
-          "confirmed",
-          "checked_in",
-          "checked_out",
-          "cancelled",
-        ),
-        defaultValue: "confirmed",
-      },
-      base_room_charge: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-      },
-      total_charges: {
-        type: DataTypes.DECIMAL(10, 2),
-        defaultValue: 0,
+        references: { model: "users", key: "id" },
       },
       deleted_at: {
         type: DataTypes.DATE,
@@ -678,17 +668,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: "bookings", key: "id" },
       },
-      charge_type: {
-        type: DataTypes.STRING(100),
+      description: {
+        type: DataTypes.STRING(200),
         allowNull: false,
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      charged_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: "users", key: "id" },
+      },
+      charged_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
       },
     },
     {
@@ -709,31 +704,33 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      name: {
-        type: DataTypes.STRING(100),
+      name_en: {
+        type: DataTypes.STRING(150),
         allowNull: false,
-        unique: true,
+      },
+      name_am: {
+        type: DataTypes.STRING(150),
+        allowNull: true,
+      },
+      module: {
+        type: DataTypes.ENUM('restaurant', 'bar', 'butcher', 'grocery'),
+        allowNull: false,
       },
       unit: {
-        type: DataTypes.STRING(20),
+        type: DataTypes.STRING(50),
         allowNull: false,
       },
-      quantity_on_hand: {
-        type: DataTypes.DECIMAL(10, 2),
+      current_stock: {
+        type: DataTypes.DECIMAL(10, 3),
         defaultValue: 0,
       },
-      reorder_level: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+      min_threshold: {
+        type: DataTypes.DECIMAL(10, 3),
+        defaultValue: 0,
       },
-      unit_cost: {
+      cost_price: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-      },
-      supplier_id: {
-        type: DataTypes.INTEGER,
         allowNull: true,
-        references: { model: "suppliers", key: "id" },
       },
     },
     {
@@ -759,21 +756,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: "inventory_items", key: "id" },
       },
-      movement_type: {
-        type: DataTypes.ENUM("purchase", "consumption", "adjustment", "return"),
+      delta: {
+        type: DataTypes.DECIMAL(10, 3),
         allowNull: false,
       },
-      quantity: {
-        type: DataTypes.DECIMAL(10, 2),
+      reason: {
+        type: DataTypes.STRING(200),
         allowNull: false,
       },
-      reference_number: {
-        type: DataTypes.STRING(100),
+      reference_id: {
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
-      notes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: "users", key: "id" },
       },
     },
     {
@@ -795,15 +793,10 @@ module.exports = (sequelize) => {
         autoIncrement: true,
       },
       name: {
-        type: DataTypes.STRING(100),
+        type: DataTypes.STRING(150),
         allowNull: false,
-        unique: true,
       },
-      contact_person: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-      },
-      phone: {
+      contact_phone: {
         type: DataTypes.STRING(20),
         allowNull: true,
       },
@@ -811,17 +804,13 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
-      address: {
+      items_supplied: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      payment_terms: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-      },
-      is_active: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
+      module: {
+        type: DataTypes.ENUM('restaurant', 'bar', 'butcher', 'grocery'),
+        allowNull: false,
       },
     },
     {
@@ -842,24 +831,12 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      summary_date: {
+      date: {
         type: DataTypes.DATE,
         allowNull: false,
         unique: true,
       },
-      total_sales: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0,
-      },
-      total_cash: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0,
-      },
-      total_telebirr: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0,
-      },
-      total_cbe: {
+      total_revenue: {
         type: DataTypes.DECIMAL(12, 2),
         defaultValue: 0,
       },
@@ -867,13 +844,54 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0,
       },
-      num_guests_rooms: {
-        type: DataTypes.INTEGER,
+      cash_total: {
+        type: DataTypes.DECIMAL(12, 2),
         defaultValue: 0,
       },
-      is_closed: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
+      telebirr_total: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      cbe_total: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      revenue_restaurant: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      revenue_bar: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      revenue_butcher: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      revenue_grocery: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      revenue_rooms: {
+        type: DataTypes.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
+      physical_cash_count: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+      cash_variance: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+      closed_by: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: { model: "users", key: "id" },
+      },
+      closed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
@@ -896,7 +914,7 @@ module.exports = (sequelize) => {
       },
       user_id: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: false,
         references: { model: "users", key: "id" },
       },
       action: {
@@ -919,11 +937,15 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(45),
         allowNull: true,
       },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       tableName: "audit_logs",
-      timestamps: true,
-      underscored: true,
+      timestamps: false,
     },
   );
 

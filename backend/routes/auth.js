@@ -25,7 +25,10 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Username is required" });
 
     const user = await User.findOne({
-      where: { name: username, is_active: true },
+      where: {
+        [require("sequelize").Op.or]: [{ name: username }, { email: username }],
+        is_active: true,
+      },
     });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 

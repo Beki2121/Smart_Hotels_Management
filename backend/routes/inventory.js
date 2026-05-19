@@ -7,8 +7,7 @@ const { checkRole } = require("../middleware/rbac");
 router.get("/", async (req, res) => {
   try {
     const items = await InventoryItem.findAll({
-      include: [{ model: Supplier }],
-      order: [["name", "ASC"]],
+      order: [["name_en", "ASC"]],
     });
     res.json(items);
   } catch (err) {
@@ -23,20 +22,21 @@ router.post(
   checkRole("superadmin", "manager", "butcher", "grocery"),
   async (req, res) => {
     try {
-      const { name, unit, reorder_level, unit_cost, supplier_id } = req.body;
-      if (!name || !unit || !reorder_level || !unit_cost) {
+      const { name_en, name_am, unit, module, min_threshold, cost_price } = req.body;
+      if (!name_en || !unit || !module) {
         return res.status(400).json({
-          error: "name, unit, reorder_level, and unit_cost required",
+          error: "name_en, unit, and module required",
         });
       }
 
       const item = await InventoryItem.create({
-        name,
+        name_en,
+        name_am,
         unit,
-        reorder_level,
-        unit_cost,
-        supplier_id,
-        quantity_on_hand: 0,
+        module,
+        min_threshold: min_threshold || 0,
+        cost_price: cost_price || 0,
+        current_stock: 0,
       });
 
       await AuditLog.create({
@@ -77,12 +77,13 @@ router.patch(
       const item = await InventoryItem.findByPk(req.params.id);
       if (!item) return res.status(404).json({ error: "Item not found" });
 
-      const { name, unit, reorder_level, unit_cost, supplier_id } = req.body;
-      if (name) item.name = name;
+      const { name_en, name_am, unit, module, min_threshold, cost_price } = req.body;
+      if (name_en) item.name_en = name_en;
+      if (name_am !== undefined) item.name_am = name_am;
       if (unit) item.unit = unit;
-      if (reorder_level) item.reorder_level = reorder_level;
-      if (unit_cost) item.unit_cost = unit_cost;
-      if (supplier_id) item.supplier_id = supplier_id;
+      if (module) item.module = module;
+      if (min_threshold !== undefined) item.min_threshold = min_threshold;
+      if (cost_price !== undefined) item.cost_price = cost_price;
 
       await item.save();
 
@@ -128,14 +129,14 @@ router.post(
       });
 
       // Update quantity on hand
-      let newQuantity = parseFloat(item.quantity_on_hand);
+      let newQuantity = parseFloat(item.current_stock);
       if (movement_type === "purchase" || movement_type === "return") {
         newQuantity += parseFloat(quantity);
       } else if (movement_type === "consumption") {
         newQuantity -= parseFloat(quantity);
       }
 
-      item.quantity_on_hand = newQuantity;
+      item.current_stock = newQuantity;
       await item.save();
 
       await AuditLog.create({

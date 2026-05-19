@@ -31,6 +31,8 @@ router.get("/:billId", authenticate, async (req, res) => {
 // POST /api/v1/receipts/:billId - Generate receipt
 router.post("/:billId", authenticate, async (req, res) => {
   try {
+    const { language = "en" } = req.body;
+
     const bill = await Bill.findByPk(req.params.billId, {
       include: [
         {
@@ -43,12 +45,11 @@ router.post("/:billId", authenticate, async (req, res) => {
     if (!bill) return res.status(404).json({ error: "Bill not found" });
 
     const receipt_number = `RCP-${Date.now()}`;
-    const receiptText = generateReceiptText(bill, receipt_number);
 
     const receipt = await Receipt.create({
       bill_id: req.params.billId,
       receipt_number,
-      receipt_text: receiptText,
+      language,
     });
 
     res.status(201).json(receipt);
@@ -66,7 +67,7 @@ router.post("/:billId/print", authenticate, async (req, res) => {
 
     if (!receipt) return res.status(404).json({ error: "Receipt not found" });
 
-    receipt.is_printed = true;
+    receipt.printed_at = new Date();
     await receipt.save();
 
     res.json(receipt);

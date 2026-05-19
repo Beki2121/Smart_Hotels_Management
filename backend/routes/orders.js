@@ -15,7 +15,7 @@ router.get("/", authenticate, async (req, res) => {
       where,
       include: [
         { model: Table },
-        { model: User, as: "creator", attributes: ["id", "name"] },
+        { model: User, attributes: ["id", "name"] },
         { model: OrderItem, include: [MenuItem] },
       ],
       order: [["createdAt", "DESC"]],
@@ -38,18 +38,16 @@ router.post(
       if (!table_id)
         return res.status(400).json({ error: "table_id required" });
 
-      const order_number = `ORD-${Date.now()}`;
       const order = await Order.create({
-        order_number,
         table_id,
-        created_by_user_id: req.user.userId,
+        user_id: req.user.userId,
         status: "pending",
-        special_requests,
+        type: "restaurant",
+        notes: special_requests,
       });
 
       // Add items if provided
       if (items && Array.isArray(items)) {
-        let total = 0;
         for (const item of items) {
           const menuItem = await MenuItem.findByPk(item.menu_item_id);
           if (menuItem) {
@@ -57,15 +55,12 @@ router.post(
               order_id: order.id,
               menu_item_id: item.menu_item_id,
               quantity: item.quantity || 1,
-              unit_price: menuItem.base_price,
-              modifiers_applied: item.modifiers || null,
-              special_instructions: item.special_instructions,
+              unit_price: menuItem.price,
+              modifier_ids: item.modifiers || null,
+              notes: item.special_instructions,
             });
-            total += menuItem.base_price * (item.quantity || 1);
           }
         }
-        order.total_amount = total;
-        await order.save();
       }
 
       await AuditLog.create({
@@ -105,16 +100,12 @@ router.post(
             order_id: order.id,
             menu_item_id: item.menu_item_id,
             quantity: item.quantity || 1,
-            unit_price: menuItem.base_price,
-            modifiers_applied: item.modifiers || null,
-            special_instructions: item.special_instructions,
+            unit_price: menuItem.price,
+            modifier_ids: item.modifiers || null,
+            notes: item.special_instructions,
           });
-          totalAdded += menuItem.base_price * (item.quantity || 1);
         }
       }
-
-      order.total_amount = (parseFloat(order.total_amount) || 0) + totalAdded;
-      await order.save();
 
       await AuditLog.create({
         user_id: req.user.userId,

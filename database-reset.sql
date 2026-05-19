@@ -1,16 +1,49 @@
--- Smart HMS Database Schema - TABLES ONLY (No CREATE DATABASE)
--- Use this if database already exists or was created by admin
--- For user: ilinkmth@localhost
+-- ============================================================================
+-- SMART HMS DATABASE RESET SCRIPT
+-- ============================================================================
+-- This script will:
+-- 1. Drop all existing tables (in reverse dependency order)
+-- 2. Create all tables fresh with correct schema
+-- 3. Create all indexes and relationships
+-- ============================================================================
 
 USE ilinkmth_smarthms;
+
+-- ============================================================================
+-- STEP 1: DROP ALL EXISTING TABLES (in reverse dependency order)
+-- ============================================================================
+
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS daily_summaries;
+DROP TABLE IF EXISTS stock_movements;
+DROP TABLE IF EXISTS inventory_items;
+DROP TABLE IF EXISTS suppliers;
+DROP TABLE IF EXISTS guest_charges;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS rooms;
+DROP TABLE IF EXISTS room_types;
+DROP TABLE IF EXISTS receipts;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS bills;
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS modifiers;
+DROP TABLE IF EXISTS menu_items;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS tables;
+DROP TABLE IF EXISTS users;
+
+-- ============================================================================
+-- STEP 2: CREATE ALL TABLES WITH CORRECT SCHEMA
+-- ============================================================================
 
 -- ============================================================================
 -- TABLE: users
 -- ============================================================================
 CREATE TABLE users (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  email VARCHAR(100) UNIQUE NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NULL,
   pin_hash VARCHAR(255),
   password_hash VARCHAR(255),
   role ENUM('superadmin','manager','cashier','waiter','kitchen','bar','butcher','grocery','receptionist') NOT NULL,
@@ -29,8 +62,8 @@ CREATE TABLE users (
 -- ============================================================================
 CREATE TABLE categories (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name_en VARCHAR(100) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  name_am VARCHAR(100) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name_en VARCHAR(100) NOT NULL,
+  name_am VARCHAR(100) NULL,
   module_type ENUM('restaurant','bar','butcher','grocery') NOT NULL,
   sort_order INT DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -44,8 +77,8 @@ CREATE TABLE categories (
 CREATE TABLE menu_items (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   category_id INT NOT NULL,
-  name_en VARCHAR(150) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  name_am VARCHAR(150) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name_en VARCHAR(150) NOT NULL,
+  name_am VARCHAR(150) NULL,
   price DECIMAL(10,2) NOT NULL,
   happy_hour_price DECIMAL(10,2),
   happy_hour_start TIME,
@@ -68,8 +101,8 @@ CREATE TABLE menu_items (
 CREATE TABLE modifiers (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   menu_item_id INT NOT NULL,
-  name_en VARCHAR(100) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  name_am VARCHAR(100) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name_en VARCHAR(100) NOT NULL,
+  name_am VARCHAR(100) NULL,
   price_delta DECIMAL(10,2) DEFAULT 0.00,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -82,8 +115,8 @@ CREATE TABLE modifiers (
 -- ============================================================================
 CREATE TABLE tables (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  label VARCHAR(50) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  section VARCHAR(100) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  label VARCHAR(50) NOT NULL,
+  section VARCHAR(100) NULL,
   capacity INT DEFAULT 4,
   status ENUM('available','occupied','reserved') DEFAULT 'available',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -193,7 +226,7 @@ CREATE TABLE receipts (
 -- ============================================================================
 CREATE TABLE room_types (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name VARCHAR(100) NOT NULL,
   description TEXT,
   base_rate DECIMAL(10,2) NOT NULL,
   max_occupancy INT DEFAULT 2,
@@ -225,7 +258,7 @@ CREATE TABLE rooms (
 CREATE TABLE bookings (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   room_id INT NOT NULL,
-  guest_name VARCHAR(150) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  guest_name VARCHAR(150) NOT NULL,
   guest_phone VARCHAR(20) NOT NULL,
   check_in DATETIME NOT NULL,
   check_out DATETIME NOT NULL,
@@ -250,7 +283,7 @@ CREATE TABLE bookings (
 CREATE TABLE guest_charges (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   booking_id INT NOT NULL,
-  description VARCHAR(200) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  description VARCHAR(200) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   charged_by INT NOT NULL,
   charged_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -266,8 +299,8 @@ CREATE TABLE guest_charges (
 -- ============================================================================
 CREATE TABLE inventory_items (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name_en VARCHAR(150) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  name_am VARCHAR(150) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name_en VARCHAR(150) NOT NULL,
+  name_am VARCHAR(150) NULL,
   module ENUM('restaurant','bar','butcher','grocery') NOT NULL,
   unit VARCHAR(50) NOT NULL,
   current_stock DECIMAL(10,3) DEFAULT 0,
@@ -285,7 +318,7 @@ CREATE TABLE stock_movements (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   inventory_item_id INT NOT NULL,
   delta DECIMAL(10,3) NOT NULL,
-  reason VARCHAR(200) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  reason VARCHAR(200) NOT NULL,
   reference_id INT,
   user_id INT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -301,7 +334,7 @@ CREATE TABLE stock_movements (
 -- ============================================================================
 CREATE TABLE suppliers (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(150) NOT NULL CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  name VARCHAR(150) NOT NULL,
   contact_phone VARCHAR(20),
   email VARCHAR(100),
   items_supplied TEXT,
@@ -354,5 +387,12 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- SCHEMA COMPLETE - 19 Tables Created Successfully
+-- SCHEMA RESET COMPLETE - 19 Tables Created Successfully
+-- ============================================================================
+-- All tables have been created with proper:
+-- - Column types matching the application requirements
+-- - Foreign key relationships
+-- - Indexes for performance
+-- - UTF8MB4 character set for international support
+-- - Timestamps (created_at, updated_at)
 -- ============================================================================

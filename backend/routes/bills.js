@@ -18,7 +18,7 @@ router.get("/", authenticate, async (req, res) => {
       where: { deleted_at: null },
       include: [
         { model: Order },
-        { model: User, as: "generator", attributes: ["id", "name"] },
+        { model: User, attributes: ["id", "name"] },
         { model: Payment },
       ],
       order: [["createdAt", "DESC"]],
@@ -45,20 +45,25 @@ router.post(
       });
       if (!order) return res.status(404).json({ error: "Order not found" });
 
-      const subtotal = parseFloat(order.total_amount) || 0;
+      // Calculate subtotal from order items
+      let subtotal = 0;
+      if (order.OrderItems) {
+        subtotal = order.OrderItems.reduce((sum, item) => {
+          return sum + item.price * item.quantity;
+        }, 0);
+      }
+
       const taxAmount = (subtotal * tax_percent) / 100;
       const totalAmount = subtotal + taxAmount - discount_amount;
 
-      const bill_number = `BILL-${Date.now()}`;
       const bill = await Bill.create({
-        bill_number,
         order_id,
-        generated_by_user_id: req.user.userId,
+        created_by: req.user.userId,
         subtotal,
         tax_amount: taxAmount,
         discount_amount,
         total_amount: totalAmount,
-        status: "draft",
+        status: "open",
       });
 
       await AuditLog.create({
@@ -105,8 +110,16 @@ router.patch(
       const bill = await Bill.findByPk(req.params.id);
       if (!bill) return res.status(404).json({ error: "Bill not found" });
 
-      bill.status = "finalized";
+      bill.status = "paid";
       await bill.save();
+
+      await AuditLog.create({
+        user_id: req.user.userId,
+        action: "UPDATE",
+        entity: "Bill",
+        entity_id: bill.id,
+        ip_address: req.ip,
+      });
 
       res.json(bill);
     } catch (err) {
@@ -125,7 +138,7 @@ router.post(
       const bill = await Bill.findByPk(req.params.id);
       if (!bill) return res.status(404).json({ error: "Bill not found" });
 
-      bill.status = "void";
+      bill.status = "voided";
       bill.deleted_at = new Date();
       await bill.save();
 

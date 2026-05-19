@@ -23,11 +23,10 @@ router.post(
   checkRole("superadmin", "manager", "cashier"),
   async (req, res) => {
     try {
-      const { bill_id, payment_method, amount_paid, reference_number } =
-        req.body;
-      if (!bill_id || !payment_method || !amount_paid) {
+      const { bill_id, method, amount, reference_no } = req.body;
+      if (!bill_id || !method || !amount) {
         return res.status(400).json({
-          error: "bill_id, payment_method, and amount_paid required",
+          error: "bill_id, method, and amount required",
         });
       }
 
@@ -36,15 +35,15 @@ router.post(
 
       const payment = await Payment.create({
         bill_id,
-        payment_method,
-        amount_paid,
-        reference_number,
-        status: "completed",
+        method,
+        amount,
+        reference_no,
+        confirmed_by: req.user.userId,
       });
 
       // Update bill status if fully paid
-      if (parseFloat(amount_paid) >= parseFloat(bill.total_amount)) {
-        bill.status = "finalized";
+      if (parseFloat(amount) >= parseFloat(bill.total_amount)) {
+        bill.status = "paid";
         await bill.save();
       }
 

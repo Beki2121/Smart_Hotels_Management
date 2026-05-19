@@ -45,7 +45,8 @@ export const UsersPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:5000/api/v1/users", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+      const response = await fetch(`${API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -74,7 +75,8 @@ export const UsersPage = () => {
       if (formData.password) payload.password = formData.password;
       if (formData.pin) payload.pin = formData.pin;
 
-      const response = await fetch("http://localhost:5000/api/v1/users", {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+      const response = await fetch(`${API_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,8 +114,9 @@ export const UsersPage = () => {
 
     setLoading(true);
     try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
       const response = await fetch(
-        `http://localhost:5000/api/v1/users/${userId}`,
+        `${API_URL}/users/${userId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

@@ -27,13 +27,15 @@ const useAuthStore = create((set) => ({
     try {
       // Support both object and separate parameters
       let credentials;
-      if (typeof credentialsOrEmail === 'object') {
+      if (typeof credentialsOrEmail === "object") {
         credentials = credentialsOrEmail;
       } else {
         credentials = { username: credentialsOrEmail, password };
       }
 
-      const response = await fetch("http://localhost:5000/api/v1/auth/login", {
+      const API_URL =
+        import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
@@ -92,8 +94,9 @@ const useAuthStore = create((set) => ({
     }
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
       const response = await fetch(
-        "http://localhost:5000/api/v1/auth/refresh",
+        `${API_URL}/auth/refresh`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

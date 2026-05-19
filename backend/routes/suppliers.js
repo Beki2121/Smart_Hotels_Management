@@ -7,7 +7,6 @@ const { checkRole } = require("../middleware/rbac");
 router.get("/", async (req, res) => {
   try {
     const suppliers = await Supplier.findAll({
-      where: { is_active: true },
       order: [["name", "ASC"]],
     });
     res.json(suppliers);
@@ -23,18 +22,16 @@ router.post(
   checkRole("superadmin", "manager"),
   async (req, res) => {
     try {
-      const { name, contact_person, phone, email, address, payment_terms } =
-        req.body;
+      const { name, contact_phone, email, module, items_supplied } = req.body;
       if (!name)
         return res.status(400).json({ error: "Supplier name required" });
 
       const supplier = await Supplier.create({
         name,
-        contact_person,
-        phone,
+        contact_phone,
         email,
-        address,
-        payment_terms,
+        module,
+        items_supplied,
       });
 
       await AuditLog.create({
@@ -76,21 +73,17 @@ router.patch(
 
       const {
         name,
-        contact_person,
-        phone,
+        contact_phone,
         email,
-        address,
-        payment_terms,
-        is_active,
+        module,
+        items_supplied,
       } = req.body;
 
       if (name) supplier.name = name;
-      if (contact_person) supplier.contact_person = contact_person;
-      if (phone) supplier.phone = phone;
+      if (contact_phone) supplier.contact_phone = contact_phone;
       if (email) supplier.email = email;
-      if (address) supplier.address = address;
-      if (payment_terms) supplier.payment_terms = payment_terms;
-      if (typeof is_active !== "undefined") supplier.is_active = is_active;
+      if (module) supplier.module = module;
+      if (items_supplied) supplier.items_supplied = items_supplied;
 
       await supplier.save();
 
